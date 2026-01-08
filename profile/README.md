@@ -15,32 +15,6 @@
 
 The platform is designed as a pipeline of specialized, autonomous microservices.
 
-```mermaid
-graph TD
-    subgraph "Frontend Layer"
-        UI[UI Service (React/Go)] -->|NATS Request| Estimate[Cost Estimator]
-        UI -->|Upload| Obj[NATS Object Store]
-    end
-
-    subgraph "Processing Core"
-        PDF[PDF Processor] -->|Events| OCR[OCR Service]
-        OCR -->|Events| TTS[TTS Service]
-        TTS -->|Events| Audio[Audio Server (AI/Python)]
-        TTS -->|Events| Mix[Soundscape Mixer]
-    end
-
-    subgraph "Data & State"
-        NATS[(NATS JetStream)]
-        PG[(PostgreSQL)]
-    end
-
-    UI --> NATS
-    Estimate --> NATS
-    PDF --> NATS
-    OCR --> NATS
-    TTS --> NATS
-    Mix --> NATS
-```
 
 ### Core Services
 
