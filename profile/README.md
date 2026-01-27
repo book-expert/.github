@@ -51,18 +51,21 @@ graph TD
 3.  **Cost Estimator:** A specialized worker that analyzes document density (character count) to provide precise, real-time pricing quotes.
 4.  **PDF-to-PNG Service:** Renders PDF pages into high-quality images and uses Gemini to generate document-wide narration and music directives.
 5.  **PNG-to-Text Service:** Uses Gemini-powered OCR to extract and normalize text, optimized for spoken narration (STEM expansion, code block handling).
-6.  **TTS Service:** Orchestrates speech synthesis and music generation, managing workload distribution across GPU-accelerated workers.
-7.  **Audio Server (Python):** A dedicated AI inference engine hosting state-of-the-art Voice Cloning models (VoxCPM 1.5).
-8.  **Soundscape Service:** Generates tailored background music and ambient soundscapes using Google Lyria.
-9.  **Audio Mixer Service:** Aggregates speech chunks, truncates silence, and mixes in background music to produce the final audio artifact.
-10. **Bridge Service:** Synchronizes asynchronous backend events with the User Database Service to provide real-time status to the UI.
-11. **NATS Orchestrator Service:** Provisions and manages the NATS JetStream infrastructure (Streams, Buckets, KV).
+6.  **Summarization Service:** An optional pre-processor that uses GenAI to condense lengthy documents into concise summaries before they enter the main pipeline.
+7.  **TTS Service:** Orchestrates speech synthesis and music generation, managing workload distribution across GPU-accelerated workers.
+8.  **Audio Server (Python):** A dedicated AI inference engine hosting state-of-the-art Voice Cloning models (VoxCPM 1.5).
+9.  **Soundscape Service:** Generates tailored background music and ambient soundscapes using Google Lyria.
+10. **Audio Mixer Service:** Aggregates speech chunks, truncates silence, and mixes in background music to produce the final audio artifact.
+11. **Bridge Service:** Synchronizes asynchronous backend events with the User Database Service to provide real-time status to the UI.
+12. **NATS Orchestrator Service:** Provisions and manages the NATS JetStream infrastructure (Streams, Buckets, KV).
 
 ### Foundation & Tooling
 
 *   **Common Worker:** A generic Go library providing standardized NATS JetStream consumption, heartbeats, and infrastructure synchronization patterns.
-*   **Common Events:** Shared event definitions and schemas ensuring type-safe communication across the entire ecosystem.
-*   **Tool Executor:** A high-performance Zig/Python service providing atomic file operations and agent coordination via the Model Context Protocol (MCP).
+*   **Common Events:** The central source of truth for all asynchronous communication, defining canonical NATS subjects and strictly typed event schemas.
+*   **Zig Common HTTP:** A high-performance, non-blocking HTTP server library in Zig, used as the networking backbone for Go and Python services requiring maximum throughput.
+*   **C++ Common Client:** A provider-agnostic C++ library for LLM APIs (Gemini, OpenAI), exposed via a C ABI for seamless integration with Go and Python.
+*   **Tool Executor:** A high-integrity Zig/Python service providing atomic file operations and agent coordination via the Model Context Protocol (MCP).
 *   **Helper Scripts:** A suite of orchestration tools for local environment setup, service management, and end-to-end testing.
 
 ---
@@ -80,11 +83,12 @@ graph TD
 
 1.  **Ingestion:** User uploads a PDF. The **UI Service** streams it to the **NATS Object Store** (`PDF_FILES` bucket).
 2.  **Estimation:** The **Cost Estimator** fetches the file, calculates character density, and returns a binding quote.
-3.  **Payment & Trigger:** Upon user approval, a `pdfs.created` event is published to the `PDFS` stream.
-4.  **Decomposition:** The **PDF Service** explodes the document into high-res images (`PNG_FILES` bucket) to capture visual context.
-5.  **Extraction:** The **PNG-to-Text Service** extracts text (`TEXT_FILES` bucket), filtering out artifacts (headers/footers).
-6.  **Performance:** The **TTS Service** requests audio generation from the **Audio Server**, chunk by chunk.
-7.  **Production:** The **Audio Mixer Service** aggregates the audio chunks, overlays the selected musical theme, and renders the final `.wav` artifact in the `AUDIO_FILES` bucket.
+3.  **Summarization (Optional):** If requested, the **Summarization Service** generates a condensed version of the document and re-injects it into the pipeline as a new PDF.
+4.  **Payment & Trigger:** Upon user approval, a `pdfs.created` event is published to the `PDFS` stream.
+5.  **Decomposition:** The **PDF Service** explodes the document into high-res images (`PNG_FILES` bucket) to capture visual context.
+6.  **Extraction:** The **PNG-to-Text Service** extracts text (`TEXT_FILES` bucket), filtering out artifacts (headers/footers).
+7.  **Performance:** The **TTS Service** requests audio generation from the **Audio Server**, chunk by chunk.
+8.  **Production:** The **Audio Mixer Service** aggregates the audio chunks, overlays the selected musical theme, and renders the final `.wav` artifact in the `AUDIO_FILES` bucket.
 
 ## 🛡️ Operational Excellence & Philosophy
 
